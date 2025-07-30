@@ -1,0 +1,127 @@
+-- GUI-based Pet Randomizer (with cooldown & draggable GUI)
+
+local plr = game.Players.LocalPlayer
+local ws = game:GetService("Workspace")
+local uis = game:GetService("UserInputService")
+
+-- Pet list by egg name
+local eggPets = {
+    ["common egg"] = {"Golden Lab", "Dog", "Bunny"},
+    ["mythical egg"] = {"Grey Mouse", "Brown Mouse", "Red Giant Ant", "Squirrel", "Red Fox"},
+    ["bug egg"] = {"Caterpillar", "Snail", "Giant Ant", "Praying Mantis"},
+    ["common summer egg"] = {"StarFish", "Seagull", "Crab"},
+    ["rare summer egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
+    ["paradise egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
+    ["dinosaur egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
+    ["primal egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
+    ["zen egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+}
+
+-- Create GUI
+local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
+gui.Name = "PetRandomizer"
+
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0, 220, 0, 180)
+frame.Position = UDim2.new(1, -230, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(40, 30, 30)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true -- Make GUI draggable
+
+local uicorner = Instance.new("UICorner", frame)
+uicorner.CornerRadius = UDim.new(0, 10)
+
+local title = Instance.new("TextLabel", frame)
+title.Text = "🐾 Pet Randomizer ✨"
+title.Size = UDim2.new(1, 0, 0, 30)
+title.BackgroundTransparency = 1
+title.TextColor3 = Color3.new(1, 1, 1)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+
+local credit = Instance.new("TextLabel", frame)
+credit.Text = "Made by: GagScripterzzz"
+credit.Size = UDim2.new(1, 0, 0, 20)
+credit.Position = UDim2.new(0, 0, 0, 30)
+credit.BackgroundTransparency = 1
+credit.TextColor3 = Color3.fromRGB(200, 200, 200)
+credit.Font = Enum.Font.Gotham
+credit.TextSize = 12
+
+local btn = Instance.new("TextButton", frame)
+btn.Text = "🎲 Randomize Pets"
+btn.Size = UDim2.new(1, -20, 0, 30)
+btn.Position = UDim2.new(0, 10, 0, 60)
+btn.BackgroundColor3 = Color3.fromRGB(255, 100, 60)
+btn.TextColor3 = Color3.new(1, 1, 1)
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 14
+
+local toggle = false
+local autoBtn = Instance.new("TextButton", frame)
+autoBtn.Text = "Auto Randomize: OFF"
+autoBtn.Size = UDim2.new(1, -20, 0, 30)
+autoBtn.Position = UDim2.new(0, 10, 0, 100)
+autoBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+autoBtn.TextColor3 = Color3.new(1, 1, 1)
+autoBtn.Font = Enum.Font.Gotham
+autoBtn.TextSize = 13
+
+local cooldown = false
+
+-- Randomize function
+local function randomizeEggs()
+    for _, obj in pairs(ws:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") and obj.Parent and obj.Parent.Name:lower():find("egg") then
+            local eggName = obj.Parent.Name:lower()
+            for key, petList in pairs(eggPets) do
+                if eggName:find(key) then
+                    local chosen = petList[math.random(1, #petList)]
+                    obj.ObjectText = obj.Parent.Name .. " | " .. chosen
+
+                    -- ESP Enhancements
+                    obj.HoldDuration = 0
+                    obj.RequiresLineOfSight = false
+                    obj.MaxActivationDistance = 100
+                    obj.Name = "💡" .. chosen
+                    break
+                end
+            end
+        end
+    end
+end
+
+-- Manual with cooldown and countdown
+btn.MouseButton1Click:Connect(function()
+    if cooldown then return end
+    cooldown = true
+    randomizeEggs()
+
+    local t = 3
+    local startTime = tick()
+    while tick() - startTime < 3 do
+        local remaining = 3 - (tick() - startTime)
+        btn.Text = string.format("Cooldown: %.1fs", remaining)
+        task.wait(0.1)
+    end
+
+    btn.Text = "🎲 Randomize Pets"
+    cooldown = false
+end)
+
+-- Auto toggle
+autoBtn.MouseButton1Click:Connect(function()
+    toggle = not toggle
+    autoBtn.Text = "Auto Randomize: " .. (toggle and "ON" or "OFF")
+end)
+
+-- Auto loop
+task.spawn(function()
+    while true do
+        if toggle then
+            pcall(randomizeEggs)
+        end
+        task.wait(3)
+    end
+end)
