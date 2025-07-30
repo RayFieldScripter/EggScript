@@ -1,23 +1,94 @@
--- GUI-based Pet Randomizer (with cooldown & draggable GUI)
+-- GUI-based Pet Randomizer with Weighted Chances, Cooldown, ESP, and Draggable GUI
+-- Made by: GagScripterzzz
 
 local plr = game.Players.LocalPlayer
 local ws = game:GetService("Workspace")
 local uis = game:GetService("UserInputService")
 
--- Pet list by egg name
+-- Egg-to-pet weighted list
 local eggPets = {
-    ["common egg"] = {"Golden Lab", "Dog", "Bunny"},
-    ["mythical egg"] = {"Grey Mouse", "Brown Mouse", "Red Giant Ant", "Squirrel", "Red Fox"},
-    ["bug egg"] = {"Caterpillar", "Snail", "Giant Ant", "Praying Mantis"},
-    ["common summer egg"] = {"StarFish", "Seagull", "Crab"},
-    ["rare summer egg"] = {"Flamingo", "Toucan", "Sea Turtle", "Orangutan", "Seal"},
-    ["paradise egg"] = {"Ostrich", "Peacock", "Capybara", "Scarlet Macaw", "Mimic Octopus"},
-    ["dinosaur egg"] = {"Raptor", "Triceratops", "Stegosaurus", "Pterodactyl", "Brontosaurus", "T-Rex"},
-    ["primal egg"] = {"Parasaurolophus", "Iguanodon", "Pachycephalosaurus", "Dilophosaurus", "Ankylosaurus", "Spinosaurus"},
-    ["zen egg"] = {"Shiba Inu", "Nihonzaru", "Tanuki", "Tanchozuru", "Kappa", "Kitsune"},
+    ["common egg"] = {
+        {name = "Golden Lab", chance = 50},
+        {name = "Dog", chance = 35},
+        {name = "Bunny", chance = 15},
+    },
+    ["mythical egg"] = {
+        {name = "Grey Mouse", chance = 25},
+        {name = "Brown Mouse", chance = 25},
+        {name = "Red Giant Ant", chance = 20},
+        {name = "Squirrel", chance = 15},
+        {name = "Red Fox", chance = 15},
+    },
+    ["bug egg"] = {
+        {name = "Caterpillar", chance = 30},
+        {name = "Snail", chance = 30},
+        {name = "Giant Ant", chance = 25},
+        {name = "Praying Mantis", chance = 15},
+    },
+    ["common summer egg"] = {
+        {name = "StarFish", chance = 40},
+        {name = "Seagull", chance = 35},
+        {name = "Crab", chance = 25},
+    },
+    ["rare summer egg"] = {
+        {name = "Flamingo", chance = 25},
+        {name = "Toucan", chance = 25},
+        {name = "Sea Turtle", chance = 20},
+        {name = "Orangutan", chance = 15},
+        {name = "Seal", chance = 15},
+    },
+    ["paradise egg"] = {
+        {name = "Ostrich", chance = 20},
+        {name = "Peacock", chance = 20},
+        {name = "Capybara", chance = 20},
+        {name = "Scarlet Macaw", chance = 20},
+        {name = "Mimic Octopus", chance = 20},
+    },
+    ["dinosaur egg"] = {
+        {name = "Raptor", chance = 20},
+        {name = "Triceratops", chance = 20},
+        {name = "Stegosaurus", chance = 15},
+        {name = "Pterodactyl", chance = 15},
+        {name = "Brontosaurus", chance = 15},
+        {name = "T-Rex", chance = 15},
+    },
+    ["primal egg"] = {
+        {name = "Parasaurolophus", chance = 20},
+        {name = "Iguanodon", chance = 20},
+        {name = "Pachycephalosaurus", chance = 15},
+        {name = "Dilophosaurus", chance = 15},
+        {name = "Ankylosaurus", chance = 15},
+        {name = "Spinosaurus", chance = 15},
+    },
+    ["zen egg"] = {
+        {name = "Shiba Inu", chance = 20},
+        {name = "Nihonzaru", chance = 20},
+        {name = "Tanuki", chance = 20},
+        {name = "Tanchozuru", chance = 15},
+        {name = "Kappa", chance = 15},
+        {name = "Kitsune", chance = 10},
+    },
 }
 
--- Create GUI
+-- Weighted random selector
+local function chooseWeighted(petList)
+    local total = 0
+    for _, pet in pairs(petList) do
+        total += pet.chance
+    end
+
+    local rand = math.random() * total
+    local current = 0
+    for _, pet in pairs(petList) do
+        current += pet.chance
+        if rand <= current then
+            return pet.name
+        end
+    end
+    return petList[1].name -- fallback
+end
+
+-- GUI Setup
 local gui = Instance.new("ScreenGui", plr:WaitForChild("PlayerGui"))
 gui.Name = "PetRandomizer"
 
@@ -27,7 +98,7 @@ frame.Position = UDim2.new(1, -230, 0, 100)
 frame.BackgroundColor3 = Color3.fromRGB(40, 30, 30)
 frame.BorderSizePixel = 0
 frame.Active = true
-frame.Draggable = true -- Make GUI draggable
+frame.Draggable = true
 
 local uicorner = Instance.new("UICorner", frame)
 uicorner.CornerRadius = UDim.new(0, 10)
@@ -70,17 +141,15 @@ autoBtn.TextSize = 13
 
 local cooldown = false
 
--- Randomize function
+-- Main Randomize Logic
 local function randomizeEggs()
     for _, obj in pairs(ws:GetDescendants()) do
         if obj:IsA("ProximityPrompt") and obj.Parent and obj.Parent.Name:lower():find("egg") then
             local eggName = obj.Parent.Name:lower()
             for key, petList in pairs(eggPets) do
                 if eggName:find(key) then
-                    local chosen = petList[math.random(1, #petList)]
+                    local chosen = chooseWeighted(petList)
                     obj.ObjectText = obj.Parent.Name .. " | " .. chosen
-
-                    -- ESP Enhancements
                     obj.HoldDuration = 0
                     obj.RequiresLineOfSight = false
                     obj.MaxActivationDistance = 100
@@ -92,17 +161,16 @@ local function randomizeEggs()
     end
 end
 
--- Manual with cooldown and countdown
+-- Manual Randomize with Cooldown
 btn.MouseButton1Click:Connect(function()
     if cooldown then return end
     cooldown = true
     randomizeEggs()
 
-    local t = 3
-    local startTime = tick()
-    while tick() - startTime < 3 do
-        local remaining = 3 - (tick() - startTime)
-        btn.Text = string.format("Cooldown: %.1fs", remaining)
+    local start = tick()
+    while tick() - start < 3 do
+        local left = 3 - (tick() - start)
+        btn.Text = string.format("Cooldown: %.1fs", left)
         task.wait(0.1)
     end
 
@@ -110,13 +178,13 @@ btn.MouseButton1Click:Connect(function()
     cooldown = false
 end)
 
--- Auto toggle
+-- Auto Toggle
 autoBtn.MouseButton1Click:Connect(function()
     toggle = not toggle
     autoBtn.Text = "Auto Randomize: " .. (toggle and "ON" or "OFF")
 end)
 
--- Auto loop
+-- Auto Loop
 task.spawn(function()
     while true do
         if toggle then
